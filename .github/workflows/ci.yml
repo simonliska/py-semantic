@@ -126,5 +126,5 @@ jobs:
         if: steps.release.outcome == 'success'
         uses: python-semantic-release/publish-action@v9.21.0
         with:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          github_token: ${{ secrets.GH_TOKEN }}
           tag: ${{ steps.release.outputs.tag }}
