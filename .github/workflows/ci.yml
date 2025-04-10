@@ -100,18 +100,31 @@ jobs:
 
           echo "bump=$BUMP" >> $GITHUB_OUTPUT
 
-      - name: Semantic Version Release
+
+      - name: Install python-semantic-release
+        run: pip install python-semantic-release
+
+      - name: Run Semantic Release (with optional label bump)
         id: release
-        uses: python-semantic-release/python-semantic-release@v9.21.0
-        with:
+        env:
           github_token: ${{ secrets.GH_TOKEN }}
-          git_committer_name: "github-actions"
-          git_committer_email: "actions@users.noreply.github.com"
-          extra_args: "${{ steps.bump.outputs.bump }}"
+        run: |
+          bump="${{ steps.bump.outputs.bump }}"
+
+          if [ -n "$bump" ]; then
+            echo "Running: semantic-release version $bump"
+            semantic-release version $bump
+          else
+            echo "Running: semantic-release version"
+            semantic-release version
+          fi
+
+          semantic-release changelog
+          semantic-release publish
 
       - name: Upload to GitHub Release Assets
+        if: steps.release.outcome == 'success'
         uses: python-semantic-release/publish-action@v9.21.0
-        if: steps.release.outputs.released == 'true'
         with:
           github_token: ${{ secrets.GH_TOKEN }}
           tag: ${{ steps.release.outputs.tag }}
