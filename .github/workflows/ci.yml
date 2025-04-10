@@ -107,7 +107,7 @@ jobs:
       - name: Run Semantic Release (with optional label bump)
         id: release
         env:
-          github_token: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           bump="${{ steps.bump.outputs.bump }}"
 
@@ -126,5 +126,5 @@ jobs:
         if: steps.release.outcome == 'success'
         uses: python-semantic-release/publish-action@v9.21.0
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           tag: ${{ steps.release.outputs.tag }}
