@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.2.1 (2025-04-10)
+
+### Bug Fixes
+
+- Test
+  ([`13ca153`](https://github.com/simonliska/py-semantic/commit/13ca153112e9a943151c474e7548a49c29445b1d))
+
+
 ## v1.2.0 (2025-04-10)
 
 
