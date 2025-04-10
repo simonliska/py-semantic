@@ -11,10 +11,11 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-release-${{ github.ref_name }}
       cancel-in-progress: false
-    
+
     permissions:
       id-token: write
       contents: write
+      pull-requests: read
 
     steps:
       - name: Checkout Repository
@@ -24,8 +25,7 @@ jobs:
           fetch-depth: 0
 
       - name: Force branch to workflow SHA
-        run: |
-          git reset --hard ${{ github.sha }}
+        run: git reset --hard ${{ github.sha }}
 
       - name: Verify upstream hasn't changed
         shell: bash
@@ -33,31 +33,72 @@ jobs:
           set +o pipefail
 
           UPSTREAM_BRANCH_NAME="$(git status -sb | head -n 1 | cut -d' ' -f2 | grep -E '\.{3}' | cut -d'.' -f4)"
-          printf '%s\n' "Upstream branch name: $UPSTREAM_BRANCH_NAME"
+          echo "Upstream branch name: $UPSTREAM_BRANCH_NAME"
 
           set -o pipefail
 
           if [ -z "$UPSTREAM_BRANCH_NAME" ]; then
-              printf >&2 '%s\n' "::error::Unable to determine upstream branch name!"
+              echo "::error::Unable to determine upstream branch name!"
               exit 1
           fi
 
           git fetch "${UPSTREAM_BRANCH_NAME%%/*}"
 
           if ! UPSTREAM_SHA="$(git rev-parse "$UPSTREAM_BRANCH_NAME")"; then
-              printf >&2 '%s\n' "::error::Unable to determine upstream branch sha!"
+              echo "::error::Unable to determine upstream branch sha!"
               exit 1
           fi
 
           HEAD_SHA="$(git rev-parse HEAD)"
 
           if [ "$HEAD_SHA" != "$UPSTREAM_SHA" ]; then
-              printf >&2 '%s\n' "[HEAD SHA] $HEAD_SHA != $UPSTREAM_SHA [UPSTREAM SHA]"
-              printf >&2 '%s\n' "::error::Upstream has changed, aborting release..."
+              echo "[HEAD SHA] $HEAD_SHA != $UPSTREAM_SHA [UPSTREAM SHA]"
+              echo "::error::Upstream has changed, aborting release..."
               exit 1
           fi
 
-          printf '%s\n' "Verified upstream branch has not changed, continuing with release..."
+          echo "Verified upstream branch has not changed, continuing with release..."
+
+      - name: Get PR Labels
+        id: pr_labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const commitSHA = context.sha;
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: commitSHA
+            });
+
+            if (prs.data.length === 0) {
+              console.log("No PRs associated with this commit.");
+              return;
+            }
+
+            const pr = prs.data[0];
+            const labels = pr.labels.map(label => label.name);
+            console.log("Found PR labels:", labels);
+            core.setOutput('labels', labels.join(','));
+
+      - name: Decide version bump level
+        id: bump
+        run: |
+          LABELS="${{ steps.pr_labels.outputs.labels }}"
+          echo "Found labels: $LABELS"
+
+          BUMP=""
+
+          if echo "$LABELS" | grep -q "major"; then
+            BUMP="--major"
+          elif echo "$LABELS" | grep -q "minor"; then
+            BUMP="--minor"
+          elif echo "$LABELS" | grep -q "patch"; then
+            BUMP="--patch"
+          fi
+
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
 
       - name: Semantic Version Release
         id: release
@@ -66,13 +107,7 @@ jobs:
           github_token: ${{ secrets.GH_TOKEN }}
           git_committer_name: "github-actions"
           git_committer_email: "actions@users.noreply.github.com"
-
-      # - name: Upload to PyPI
-      #   uses: pypa/gh-action-pypi-publish@v1
-      #   if: steps.release.outputs.released == 'true'
-        # Add PyPI token if needed:
-        # with:
-        #   password: ${{ secrets.PYPI_API_TOKEN }}
+          extra_args: "${{ steps.bump.outputs.bump }}"
 
       - name: Upload to GitHub Release Assets
         uses: python-semantic-release/publish-action@v9.21.0
