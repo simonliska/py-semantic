@@ -100,7 +100,6 @@ jobs:
 
           echo "bump=$BUMP" >> $GITHUB_OUTPUT
 
-
       - name: Install python-semantic-release
         run: pip install python-semantic-release
 
