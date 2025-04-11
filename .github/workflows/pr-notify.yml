@@ -1,4 +1,4 @@
-name: Notify Missing Version Info
+name: Version Bump Check
 
 on:
   pull_request:
@@ -6,11 +6,12 @@ on:
       - opened
       - reopened
       - synchronize
-
+      - labeled
+      - unlabeled
 jobs:
-  notify:
+  version-check:
+    name: Version Info
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       pull-requests: write
@@ -50,8 +51,15 @@ jobs:
             echo "No conventional commit pattern found"
           fi
 
-      - name: Notify Missing Version Info
+      - name: Verify Version Information
+        id: verify_version
         if: steps.pr_labels.outputs.labels == '' && steps.check_commits.outputs.conventional_commit == 'false'
+        run: |
+          echo "::error::Missing version bump information in both PR labels and commit messages"
+          exit 1  # This will cause the check to fail
+          
+      - name: Notify Missing Version Info
+        if: failure() && steps.verify_version.conclusion == 'failure'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GH_TOKEN }}
