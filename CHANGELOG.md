@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.4.0 (2025-04-11)
+
+### Features
+
+- Test
+  ([`f0575bd`](https://github.com/simonliska/py-semantic/commit/f0575bddad69d0fac249eac8e3a693643c07b8e7))
+
+
 ## v1.3.0 (2025-04-11)
 
 ### Features
