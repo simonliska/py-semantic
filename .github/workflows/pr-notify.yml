@@ -1,0 +1,57 @@
+name: Notify Missing Version Info
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get PR Labels
+        id: pr_labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const labels = context.payload.pull_request.labels.map(label => label.name);
+            console.log("Found PR labels:", labels);
+            core.setOutput('labels', labels.join(','));
+
+      - name: Check for Conventional Commit Messages
+        id: check_commits
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          COMMITS=$(gh pr view ${{ github.event.pull_request.number }} --json commits --jq '.commits[].commit.message')
+          echo "Commit messages: $COMMITS"
+
+          if echo "$COMMITS" | grep -qE "(feat|fix|BREAKING CHANGE)"; then
+            echo "conventional_commit=true" >> $GITHUB_OUTPUT
+          else
+            echo "conventional_commit=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Missing Version Info
+        if: steps.pr_labels.outputs.labels == '' && steps.check_commits.outputs.conventional_commit == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: "🚨 **Missing Version Bump Information** 🚨\n\nPlease add one of the following:\n- A PR label (`major`, `minor`, or `patch`)\n- A conventional commit message (e.g., `feat:`, `fix:`, or `BREAKING CHANGE:`).\n\nThis is required to determine the version bump for the release."
+            });

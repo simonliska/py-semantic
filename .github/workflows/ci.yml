@@ -100,19 +100,6 @@ jobs:
 
           echo "bump=$BUMP" >> $GITHUB_OUTPUT
 
-      - name: Notify Missing Version Info
-        if: steps.bump.outputs.bump == ''
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GH_TOKEN }}
-          script: |
-            github.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: "No version bump information (labels or commit messages) was found. Defaulting to a patch bump. Please ensure to add labels or use conventional commit messages in the future."
-            });
-
       - name: Install python-semantic-release
         run: pip install python-semantic-release
 
