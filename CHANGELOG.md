@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.3.0 (2025-04-11)
+
+### Features
+
+- Friday
+  ([`254ba72`](https://github.com/simonliska/py-semantic/commit/254ba72bd7c319ccd1abf57da4c40d2aa1b720bb))
+
+
 ## v1.2.2 (2025-04-11)
 
 
