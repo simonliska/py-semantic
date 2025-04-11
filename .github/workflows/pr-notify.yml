@@ -34,13 +34,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          COMMITS=$(gh pr view ${{ github.event.pull_request.number }} --json commits --jq '.commits[].commit.message')
-          echo "Commit messages: $COMMITS"
-
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          echo "Checking commits for PR #$PR_NUMBER"
+          
+          COMMITS=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/commits --jq '.[].commit.message')
+          
+          echo "Commit messages:"
+          echo "$COMMITS"
+          
           if echo "$COMMITS" | grep -qE "(feat|fix|BREAKING CHANGE)"; then
             echo "conventional_commit=true" >> $GITHUB_OUTPUT
+            echo "Found conventional commit pattern"
           else
             echo "conventional_commit=false" >> $GITHUB_OUTPUT
+            echo "No conventional commit pattern found"
           fi
 
       - name: Notify Missing Version Info
