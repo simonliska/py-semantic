@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.6.0 (2025-04-15)
+
+### Features
+
+- Added Hello
+  ([`791cb8e`](https://github.com/simonliska/py-semantic/commit/791cb8e28b425a1d65aab870c61b413dc7b096d8))
+
+
 ## v1.5.0 (2025-04-11)
 
 
